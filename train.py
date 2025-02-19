@@ -10,10 +10,14 @@ pygame.init()
 screen = pygame.display.set_mode(SCREEN_SIZE)
 clock = pygame.time.Clock()
 
-def train_ai(episodes=500, render_every=100, save_every=100):
+def train_ai(episodes=2000, render_every=100, save_every=500):
     agent = DQNAgent(state_size=10, action_size=4)
     scores = []
     avg_scores = []
+    
+    # Utiliser CUDA si disponible
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
     
     for episode in range(episodes):
         snake = Snake()
@@ -23,14 +27,6 @@ def train_ai(episodes=500, render_every=100, save_every=100):
         done = False
         
         while not done:
-            if episode % render_every == 0:
-                pygame.event.pump()
-                screen.fill(BLACK)
-                snake.draw(screen)
-                apple.draw(screen)
-                pygame.display.flip()
-                clock.tick(FPS)
-            
             action = agent.act(state)
             directions = [UP, DOWN, LEFT, RIGHT]
             snake.direction = directions[action]
@@ -58,7 +54,10 @@ def train_ai(episodes=500, render_every=100, save_every=100):
             total_reward += reward
             agent.remember(state, action, reward, next_state, done)
             state = next_state
-            agent.replay()
+            
+            # Réduire la fréquence des replays
+            if episode % 2 == 0:
+                agent.replay()
         
         scores.append(len(snake.body))
         avg_score = np.mean(scores[-100:])
@@ -68,9 +67,12 @@ def train_ai(episodes=500, render_every=100, save_every=100):
             torch.save(agent.model.state_dict(), f"snake_ai_{episode}.pth")
             agent.update_target_model()
             print(f"Episode: {episode+1}/{episodes}, Score: {len(snake.body)}, Avg Score: {avg_score:.2f}, Epsilon: {agent.epsilon:.2f}")
-        
-        #print(f"Episode: {episode+1}/{episodes}, Score: {len(snake.body)}, Avg Score: {avg_score:.2f}, Epsilon: {agent.epsilon:.2f}")
     
+    # Sauvegarder le modèle final
+    final_model_path = "snake_ai_final.pth"
+    torch.save(agent.model.state_dict(), final_model_path)
+    print(f"Modèle final sauvegardé dans {final_model_path}")
+
     # Plot results
     plt.plot(scores, label='Score')
     plt.plot(avg_scores, label='Avg Score')

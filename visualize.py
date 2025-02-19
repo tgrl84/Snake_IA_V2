@@ -8,7 +8,7 @@ pygame.init()
 screen = pygame.display.set_mode(SCREEN_SIZE)
 clock = pygame.time.Clock()
 
-def visualize_game(model_path="snake_ai_400.pth"):
+def visualize_game(model_path="snake_ai_final.pth"):
     # Charger l'agent et le modèle entraîné
     agent = DQNAgent(state_size=10, action_size=4)
     agent.model.load_state_dict(torch.load(model_path))
